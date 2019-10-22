@@ -1,6 +1,5 @@
 
 const Alexa = require('ask-sdk-core');
-const persistenceAdapter = require('ask-sdk-s3-persistence-adapter');
 
 
 const LaunchRequestHandler = {
@@ -24,24 +23,9 @@ const AddBeerHandler = {
     return handlerInput.requestEnvelope.request.type === 'IntentRequest'
                 && handlerInput.requestEnvelope.request.intent.name === 'AddBeer';
   },  
-  async handle(handlerInput, error){
-    const beers = handlerInput.requestEnvelope.request.intent.slots.Anzahl.value;
-    
-    const attributesManager = handlerInput.attributesManager;
-    let amntAttr = { "beers" : beers};
-    attributesManager.setPersistentAttributes(amntAttr);
-    await attributesManager.savePersistentAttributes();
-    
+  handle(handlerInput, error){
+    const beers = handlerInput.requestEnvelope.request.intent.slots.Anzahl.value;   
     const output = `Ich zähle ${beers} Bier`;
-    
-   // const sessionAttributes = await attributesManager.getPersistentAttributes() || {};
-
-    //const loaded = sessionAttributes.hasOwnProperty('beers') ? sessionAttributes.beers : 0;
-  
- // if (year && month && day) {
-//        attributesManager.setSessionAttributes(sessionAttributes);
-//    }
-    //const output = `Ich habe ${loaded} gezählt`;
     
     return handlerInput.responseBuilder.speak(output).getResponse();
   }
@@ -127,9 +111,6 @@ const ErrorHandler = {
 // payloads to the handlers above. Make sure any new handlers or interceptors you've
 // defined are included below. The order matters - they're processed top to bottom.
 exports.handler = Alexa.SkillBuilders.custom()
-    .withPersistenceAdapter(
-        new persistenceAdapter.S3PersistenceAdapter({bucketName:process.env.S3_PERSISTENCE_BUCKET})
-    )
     .addRequestHandlers(
         LaunchRequestHandler,
         AddBeerHandler,
