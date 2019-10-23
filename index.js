@@ -96,10 +96,11 @@ const HelpIntentHandler = {
     },
     handle(handlerInput) {
         const speakOutput = 'Du kannst mit mir zählen, wie viel Bier du getrunken hast.';
+        const repromptOutput = 'Frage nach, wie viele Bier ich bereits gezählt habe, oder füge neue Bier hinzu.';
 
         return handlerInput.responseBuilder
             .speak(speakOutput)
-            .reprompt(speakOutput)
+            .reprompt(repromptOutput)
             .getResponse();
     }
 };
@@ -175,7 +176,7 @@ exports.handler = Alexa.SkillBuilders.custom()
     .addRequestHandlers(
         LaunchRequestHandler,
         AddBeerHandler,
-	GetBeerNumberHandler,
+        GetBeerNumberHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,
@@ -185,3 +186,6 @@ exports.handler = Alexa.SkillBuilders.custom()
         ErrorHandler,
     )
     .lambda();
+    
+    
+    
