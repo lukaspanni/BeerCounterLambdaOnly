@@ -84,7 +84,7 @@ const GetBeerNumberHandler = {
         }else{
             speakOutput = `Ich habe keine gespeicherten Daten gefunden`;
         }
-        return handlerInput.responseBuilder.speak(speakOutput);
+        return handlerInput.responseBuilder.speak(speakOutput).getResponse();
     }
 };
 
