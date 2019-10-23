@@ -12,7 +12,9 @@ public class Counter {
 
 	public static void main(String[] args) {
 		Counter c = new Counter();
+		System.out.println(c.getBeers());
 		c.addBeers(15);
+		System.out.println(c.getBeers());
 		c.exit();
 	}
 
@@ -50,7 +52,7 @@ public class Counter {
 	}
 
 	private void writePersistentData() {
-		try (BufferedWriter bw = new BufferedWriter(new FileWriter("beers.txt", true))) {
+		try (BufferedWriter bw = new BufferedWriter(new FileWriter("beers.txt", false))) {
 			String str = String.valueOf(firstBeerSaved) + "," + String.valueOf(counter);
 			bw.write(str);
 		} catch (Exception e) {
@@ -62,8 +64,8 @@ public class Counter {
 		try (BufferedReader br = new BufferedReader(new FileReader("beers.txt"))) {
 			String line = br.readLine();
 			while (line != null) {
-				line = br.readLine();
 				parseLine(line);
+				line = br.readLine();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
