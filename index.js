@@ -2,6 +2,7 @@ const Alexa = require('ask-sdk-core');
 
 const persistenceAdapter = require('ask-sdk-s3-persistence-adapter');
 var s3Attributes = {};
+var dataLoaded = false;
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
@@ -13,6 +14,7 @@ const LaunchRequestHandler = {
         
         const attributesManager = handlerInput.attributesManager;
         s3Attributes = await attributesManager.getPersistentAttributes() || {};
+        dataLoaded = true;
       
         if(s3Attributes.hasOwnProperty("firstBeer")){
             //reset Counter 24hours after the first Ber
@@ -47,7 +49,10 @@ const AddBeerHandler = {
         let output = `Ich zähle ${beers} Bier.`;
         
         const attributesManager = handlerInput.attributesManager;
-
+        if(!dataLoaded){
+            s3Attributes = await attributesManager.getPersistentAttributes() || {};
+            dataLoaded = true;
+        }
        
         if(s3Attributes.hasOwnProperty("beers") && s3Attributes.beers > 0){
             s3Attributes.beers = parseInt(s3Attributes.beers) + parseInt(beers);
@@ -73,8 +78,13 @@ const GetBeerNumberHandler = {
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
                     && handlerInput.requestEnvelope.request.intent.name === 'GetBeerNumber';
     },
-    handle(handlerInput, error){
+    async handle(handlerInput, error){
         let speakOutput;
+        if(!dataLoaded){
+            const attributesManager = handlerInput.attributesManager;
+            s3Attributes = await attributesManager.getPersistentAttributes() || {};
+            dataLoaded = true;
+        }
         if(s3Attributes.hasOwnProperty("beers")){
             if(s3Attributes.beers > 0){
                 speakOutput = `Ich habe ${s3Attributes.beers} Bier für dich gezählt. `;
