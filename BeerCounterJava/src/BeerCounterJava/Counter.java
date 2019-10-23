@@ -52,7 +52,7 @@ public class Counter {
 	}
 
 	private void writePersistentData() {
-		try (BufferedWriter bw = new BufferedWriter(new FileWriter("beers.txt", false))) {
+		try (BufferedWriter bw = new BufferedWriter(new FileWriter("counter.beers", false))) {
 			String str = String.valueOf(firstBeerSaved) + "," + String.valueOf(counter);
 			bw.write(str);
 		} catch (Exception e) {
@@ -61,7 +61,7 @@ public class Counter {
 	}
 
 	private void readPresistentData() {
-		try (BufferedReader br = new BufferedReader(new FileReader("beers.txt"))) {
+		try (BufferedReader br = new BufferedReader(new FileReader("counter.beers"))) {
 			String line = br.readLine();
 			while (line != null) {
 				parseLine(line);
