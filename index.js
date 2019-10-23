@@ -1,6 +1,6 @@
 
 const Alexa = require('ask-sdk-core');
-
+//Try https://forums.developer.amazon.com/questions/208216/persistent-attributes-in-alexa-hosted-skill.html
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
