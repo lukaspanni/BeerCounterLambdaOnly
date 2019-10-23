@@ -2,7 +2,6 @@ const Alexa = require('ask-sdk-core');
 
 const persistenceAdapter = require('ask-sdk-s3-persistence-adapter');
 var s3Attributes = {};
-var counterReset = false;
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
@@ -18,10 +17,13 @@ const LaunchRequestHandler = {
         if(s3Attributes.hasOwnProperty("firstBeer")){
             //reset Counter 24hours after the first Ber
             if (s3Attributes.firstBeer + (24 * 60 * 60 * 1000) < Date.now()) {
-                counterReset = true;
-		    }
+                s3Attributes.firstBeer = -1;
+                s3Attributes.beers = 0;
+                attributesManager.setPersistentAttributes(s3Attributes);
+                await attributesManager.savePersistentAttributes(); 	
+            }
         }
-        if(!counterReset && s3Attributes.hasOwnProperty("beers") && s3Attributes.beers > 0){
+        if(s3Attributes.hasOwnProperty("beers") && s3Attributes.beers > 0){
             speakOutput += ` Ich habe bereits ${s3Attributes.beers} Bier für dich gezählt.`
             repromptOutput += ` Ich habe bereits ${s3Attributes.beers} Bier für dich gezählt.`
         }
@@ -47,25 +49,45 @@ const AddBeerHandler = {
         const attributesManager = handlerInput.attributesManager;
 
        
-        if(!counterReset && s3Attributes.hasOwnProperty("beers") && s3Attributes.beers > 0){
+        if(s3Attributes.hasOwnProperty("beers") && s3Attributes.beers > 0){
             s3Attributes.beers = parseInt(s3Attributes.beers) + parseInt(beers);
-            output += ` Ich habe bereits ${beers} Bier für dich gezählt`;
-        }else{
-            s3Attributes.beers = parseInt(beers);
-            s3Attributes.firstBeer = Date.now();
-            counterReset = false;
+            if(s3Attributes.hasOwnProperty("firstBeer") && s3Attributes.firstBeer !== -1){
+                s3Attributes.firstBeer = Date.now();
+            }
+            if(s3Attributes.beers > 1){
+                output += ` Ich habe bereits ${beers} Bier für dich gezählt`;
+            }
         }
 
         attributesManager.setPersistentAttributes(s3Attributes);
-
-        await attributesManager.savePersistentAttributes();    
-
+        await attributesManager.savePersistentAttributes();
 
         
         return handlerInput.responseBuilder.speak(output).getResponse();
     }
     
 };
+
+const GetBeerNumberHandler = {
+  canHandle(handlerInput){
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+                    && handlerInput.requestEnvelope.request.intent.name === 'GetBeerNumber';
+    },
+    handle(handlerInput, error){
+        let speakOutput;
+        if(s3Attributes.hasOwnProperty("beers")){
+            if(s3Attributes.beers > 0){
+                speakOutput = `Ich habe ${s3Attributes.beers} Bier für dich gezählt. `;
+            }else{
+                speakOutput = `Ich habe noch kein Bier für dich gezählt. Füge doch eins hinzu`;
+            }
+        }else{
+            speakOutput = `Ich habe keine gespeicherten Daten gefunden`;
+        }
+        return handlerInput.responseBuilder.speak(speakOutput);
+    }
+};
+
 
 const HelpIntentHandler = {
     canHandle(handlerInput) {
@@ -153,6 +175,7 @@ exports.handler = Alexa.SkillBuilders.custom()
     .addRequestHandlers(
         LaunchRequestHandler,
         AddBeerHandler,
+	GetBeerNumberHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,
