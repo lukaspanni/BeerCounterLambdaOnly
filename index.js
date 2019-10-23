@@ -2,6 +2,7 @@ const Alexa = require('ask-sdk-core');
 
 const persistenceAdapter = require('ask-sdk-s3-persistence-adapter');
 var s3Attributes = {};
+var counterReset = false;
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
@@ -15,14 +16,12 @@ const LaunchRequestHandler = {
         s3Attributes = await attributesManager.getPersistentAttributes() || {};
       
         if(s3Attributes.hasOwnProperty("firstBeer")){
-            let firstBeer = s3Attributes.firstBeer;
-            let now = Date.now();
             //reset Counter 24hours after the first Ber
-            if (firstBeer + (24 * 60 * 60 * 1000) < now) {
-			    firstBeer = -1;
+            if (s3Attributes.firstBeer + (24 * 60 * 60 * 1000) < Date.now()) {
+                counterReset = true;
 		    }
         }
-        if(s3Attributes.hasOwnProperty("beers") && s3Attributes.beers > 0){
+        if(!counterReset && s3Attributes.hasOwnProperty("beers") && s3Attributes.beers > 0){
             speakOutput += ` Ich habe bereits ${s3Attributes.beers} Bier für dich gezählt.`
             repromptOutput += ` Ich habe bereits ${s3Attributes.beers} Bier für dich gezählt.`
         }
@@ -47,14 +46,15 @@ const AddBeerHandler = {
         
         const attributesManager = handlerInput.attributesManager;
 
-        if(s3Attributes.hasOwnProperty("beers") && s3Attributes.beers > 0){
-            beers = parseInt(s3Attributes.beers) + parseInt(beers);
+       
+        if(!counterReset && s3Attributes.hasOwnProperty("beers") && s3Attributes.beers > 0){
+            s3Attributes.beers = parseInt(s3Attributes.beers) + parseInt(beers);
             output += ` Ich habe bereits ${beers} Bier für dich gezählt`;
+        }else{
+            s3Attributes.beers = parseInt(beers);
+            s3Attributes.firstBeer = Date.now();
+            counterReset = false;
         }
-
-        s3Attributes = {
-            "beers": beers,
-        };
 
         attributesManager.setPersistentAttributes(s3Attributes);
 
@@ -162,6 +162,3 @@ exports.handler = Alexa.SkillBuilders.custom()
         ErrorHandler,
     )
     .lambda();
-    
-    
-    
