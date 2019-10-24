@@ -1,3 +1,5 @@
+//Skill idea
+
 package BeerCounterJava;
 
 import java.io.BufferedReader;
