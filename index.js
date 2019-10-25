@@ -11,13 +11,13 @@ const LaunchRequestHandler = {
     async handle(handlerInput) {
         let speakOutput = 'Herzlich Willkommen beim Beer Counter. Wie kann ich helfen?';
         let repromptOutput = 'Kann ich etwas für dich tun? Ich kann Bier zählen.';
-        
+
         const attributesManager = handlerInput.attributesManager;
         s3Attributes = await attributesManager.getPersistentAttributes() || {};
         dataLoaded = true;
-      
-        if(s3Attributes.hasOwnProperty("firstBeer")){
-            //reset Counter 24hours after the first Ber
+
+        if (s3Attributes.hasOwnProperty("firstBeer")) {
+            //reset Counter 24hours after the first Beer
             //Copy this to every Intent? Make this function?
             //Has to be called everytime when Intent is triggered
             //New Method to load Data and check reset? 
@@ -25,14 +25,14 @@ const LaunchRequestHandler = {
                 s3Attributes.firstBeer = -1;
                 s3Attributes.beers = 0;
                 attributesManager.setPersistentAttributes(s3Attributes);
-                await attributesManager.savePersistentAttributes(); 	
+                await attributesManager.savePersistentAttributes();
             }
         }
-        if(s3Attributes.hasOwnProperty("beers") && s3Attributes.beers > 0){
+        if (s3Attributes.hasOwnProperty("beers") && s3Attributes.beers > 0) {
             speakOutput += ` Ich habe bereits ${s3Attributes.beers} Bier für dich gezählt.`
             repromptOutput += ` Ich habe bereits ${s3Attributes.beers} Bier für dich gezählt.`
         }
-        
+
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt(repromptOutput)
@@ -40,29 +40,42 @@ const LaunchRequestHandler = {
     }
 };
 
+async function LoadAndCheckReset(attributesManager) {
+    if (s3Attributes.hasOwnProperty("firstBeer")) {
+        //reset Counter 24hours after the first Beer
+        //firstBeer = -1 => reseted
+        if (s3Attributes.firstBeer != -1 && s3Attributes.firstBeer + (24 * 60 * 60 * 1000) < Date.now()) {
+            s3Attributes.firstBeer = -1;
+            s3Attributes.beers = 0;
+            attributesManager.setPersistentAttributes(s3Attributes);
+            await attributesManager.savePersistentAttributes();
+        }
+    }
+}
+
 const AddBeerHandler = {
-    canHandle(handlerInput){
-        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-                    && handlerInput.requestEnvelope.request.intent.name === 'AddBeer';
-    },  
-    
-    async handle(handlerInput, error){
+    canHandle(handlerInput) {
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest' &&
+            handlerInput.requestEnvelope.request.intent.name === 'AddBeer';
+    },
+
+    async handle(handlerInput, error) {
         let beers = handlerInput.requestEnvelope.request.intent.slots.Anzahl.value;
-        
+
         let output = `Ich zähle ${beers} Bier.`;
-        
+
         const attributesManager = handlerInput.attributesManager;
-        if(!dataLoaded){
+        if (!dataLoaded) {
             s3Attributes = await attributesManager.getPersistentAttributes() || {};
             dataLoaded = true;
         }
-       
-        if(s3Attributes.hasOwnProperty("beers")){
+
+        if (s3Attributes.hasOwnProperty("beers")) {
             s3Attributes.beers = parseInt(s3Attributes.beers) + parseInt(beers);
-            if(s3Attributes.hasOwnProperty("firstBeer") && s3Attributes.firstBeer !== -1){
+            if (s3Attributes.hasOwnProperty("firstBeer") && s3Attributes.firstBeer !== -1) {
                 s3Attributes.firstBeer = Date.now();
             }
-            if(s3Attributes.beers > 1){
+            if (s3Attributes.beers > 1) {
                 output += ` Ich habe bereits ${beers} Bier für dich gezählt`;
             }
         }
@@ -70,31 +83,31 @@ const AddBeerHandler = {
         attributesManager.setPersistentAttributes(s3Attributes);
         await attributesManager.savePersistentAttributes();
 
-        
+
         return handlerInput.responseBuilder.speak(output).getResponse();
     }
-    
+
 };
 
 const GetBeerNumberHandler = {
-  canHandle(handlerInput){
-        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-                    && handlerInput.requestEnvelope.request.intent.name === 'GetBeerNumber';
+    canHandle(handlerInput) {
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest' &&
+            handlerInput.requestEnvelope.request.intent.name === 'GetBeerNumber';
     },
-    async handle(handlerInput, error){
+    async handle(handlerInput, error) {
         let speakOutput;
-        if(!dataLoaded){
+        if (!dataLoaded) {
             const attributesManager = handlerInput.attributesManager;
             s3Attributes = await attributesManager.getPersistentAttributes() || {};
             dataLoaded = true;
         }
-        if(s3Attributes.hasOwnProperty("beers")){
-            if(s3Attributes.beers > 0){
+        if (s3Attributes.hasOwnProperty("beers")) {
+            if (s3Attributes.beers > 0) {
                 speakOutput = `Ich habe ${s3Attributes.beers} Bier für dich gezählt. `;
-            }else{
+            } else {
                 speakOutput = `Ich habe noch kein Bier für dich gezählt. Füge doch eins hinzu`;
             }
-        }else{
+        } else {
             speakOutput = `Ich habe keine gespeicherten Daten gefunden`;
         }
         return handlerInput.responseBuilder.speak(speakOutput).getResponse();
@@ -104,8 +117,8 @@ const GetBeerNumberHandler = {
 
 const HelpIntentHandler = {
     canHandle(handlerInput) {
-        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
     },
     handle(handlerInput) {
         const speakOutput = 'Du kannst mit mir zählen, wie viel Bier du getrunken hast.';
@@ -119,9 +132,9 @@ const HelpIntentHandler = {
 };
 const CancelAndStopIntentHandler = {
     canHandle(handlerInput) {
-        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-            && (Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.CancelIntent'
-                || Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.StopIntent');
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            (Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.CancelIntent' ||
+                Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.StopIntent');
     },
     handle(handlerInput) {
         const speakOutput = 'Bis Bald!';
@@ -184,7 +197,7 @@ const ErrorHandler = {
 // defined are included below. The order matters - they're processed top to bottom.
 exports.handler = Alexa.SkillBuilders.custom()
     .withPersistenceAdapter(
-        new persistenceAdapter.S3PersistenceAdapter({bucketName:process.env.S3_PERSISTENCE_BUCKET})
+        new persistenceAdapter.S3PersistenceAdapter({ bucketName: process.env.S3_PERSISTENCE_BUCKET })
     )
     .addRequestHandlers(
         LaunchRequestHandler,
@@ -199,6 +212,3 @@ exports.handler = Alexa.SkillBuilders.custom()
         ErrorHandler,
     )
     .lambda();
-    
-    
-    
