@@ -18,6 +18,9 @@ const LaunchRequestHandler = {
       
         if(s3Attributes.hasOwnProperty("firstBeer")){
             //reset Counter 24hours after the first Ber
+            //Copy this to every Intent? Make this function?
+            //Has to be called everytime when Intent is triggered
+            //New Method to load Data and check reset? 
             if (s3Attributes.firstBeer + (24 * 60 * 60 * 1000) < Date.now()) {
                 s3Attributes.firstBeer = -1;
                 s3Attributes.beers = 0;
