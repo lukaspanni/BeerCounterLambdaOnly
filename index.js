@@ -54,7 +54,7 @@ const AddBeerHandler = {
             dataLoaded = true;
         }
        
-        if(s3Attributes.hasOwnProperty("beers") && s3Attributes.beers > 0){
+        if(s3Attributes.hasOwnProperty("beers")){
             s3Attributes.beers = parseInt(s3Attributes.beers) + parseInt(beers);
             if(s3Attributes.hasOwnProperty("firstBeer") && s3Attributes.firstBeer !== -1){
                 s3Attributes.firstBeer = Date.now();
