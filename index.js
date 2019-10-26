@@ -13,7 +13,7 @@ const LaunchRequestHandler = {
         let repromptOutput = 'Kann ich etwas für dich tun? Ich kann Bier zählen.';
 
         const attributesManager = handlerInput.attributesManager;
-
+        
         if (!dataLoaded) {
             await LoadAndCheckReset(attributesManager);
         }
@@ -30,7 +30,7 @@ const LaunchRequestHandler = {
 };
 
 async function LoadAndCheckReset(attributesManager) {
-    s3Attributes = await attributesManager.getPersistentAttributes() || { "beers": 0, "firstBeer": -1 };
+    s3Attributes = await attributesManager.getPersistentAttributes() || {"beers":0, "firstBeer": -1};
     dataLoaded = true;
     if (s3Attributes.hasOwnProperty("firstBeer")) {
         //reset Counter 24hours after the first Beer
@@ -41,11 +41,9 @@ async function LoadAndCheckReset(attributesManager) {
             attributesManager.setPersistentAttributes(s3Attributes);
             await attributesManager.savePersistentAttributes();
         }
-        return "1";
-    } else {
-        s3Attributes = { "beers": 0, "firstBeer": -1 };
+    }else{
+        s3Attributes = {"beers":0, "firstBeer":-1};
     }
-    return "2";
 }
 
 const AddBeerHandler = {
@@ -70,7 +68,7 @@ const AddBeerHandler = {
                 s3Attributes.firstBeer = Date.now();
             }
             if (s3Attributes.beers > 1) {
-                output += ` Ich habe bereits ${beers} Bier für dich gezählt`;
+                output += ` Ich habe bereits ${s3Attributes.beers} Bier für dich gezählt`;
             }
         }
 
