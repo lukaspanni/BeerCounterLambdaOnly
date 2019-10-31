@@ -105,6 +105,17 @@ const GetBeerNumberHandler = {
     }
 };
 
+const ResetBeersHandler = {
+    canHandle(handlerInput) {
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest' &&
+            handlerInput.requestEnvelope.request.intent.name === 'ResetBeersIntent';
+    },
+    handle(handlerInput, error) {
+        let speakOutput = "Not implemented";
+        return handlerInput.responseBuilder.speak(speakOutput).getResponse();
+    }
+};
+
 
 const HelpIntentHandler = {
     canHandle(handlerInput) {
