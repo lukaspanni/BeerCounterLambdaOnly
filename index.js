@@ -13,7 +13,7 @@ const LaunchRequestHandler = {
         let repromptOutput = 'Kann ich etwas für dich tun? Ich kann Bier zählen.';
 
         const attributesManager = handlerInput.attributesManager;
-        
+
         if (!dataLoaded) {
             await LoadAndCheckReset(attributesManager);
         }
@@ -30,7 +30,7 @@ const LaunchRequestHandler = {
 };
 
 async function LoadAndCheckReset(attributesManager) {
-    s3Attributes = await attributesManager.getPersistentAttributes() || {"beers":0, "firstBeer": -1};
+    s3Attributes = await attributesManager.getPersistentAttributes() || { "beers": 0, "firstBeer": -1 };
     dataLoaded = true;
     if (s3Attributes.hasOwnProperty("firstBeer")) {
         //reset Counter 24hours after the first Beer
@@ -41,8 +41,8 @@ async function LoadAndCheckReset(attributesManager) {
             attributesManager.setPersistentAttributes(s3Attributes);
             await attributesManager.savePersistentAttributes();
         }
-    }else{
-        s3Attributes = {"beers":0, "firstBeer":-1};
+    } else {
+        s3Attributes = { "beers": 0, "firstBeer": -1 };
     }
 }
 
@@ -111,7 +111,17 @@ const ResetBeersHandler = {
             handlerInput.requestEnvelope.request.intent.name === 'ResetBeersIntent';
     },
     handle(handlerInput, error) {
-        let speakOutput = "Not implemented";
+        let speakOutput = "Dein BeerCounter wird zurückgesetzt";
+        if (!dataLoaded) {
+            const attributesManager = handlerInput.attributesManager;
+            await LoadAndCheckReset(attributesManager);
+        }
+        //Method to reset data?
+        if (s3Attributes.hasOwnProperty("beers")) {
+            s3Attributes.beers = 0;
+            s3Attributes.firstBeer = -1;
+        }
+        await attributesManager.savePersistentAttributes(s3Attributes);
         return handlerInput.responseBuilder.speak(speakOutput).getResponse();
     }
 };
