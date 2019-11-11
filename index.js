@@ -13,7 +13,7 @@ const LaunchRequestHandler = {
         let repromptOutput = 'Kann ich etwas für dich tun? Ich kann Bier zählen.';
 
         const attributesManager = handlerInput.attributesManager;
-
+        
         if (!dataLoaded) {
             await LoadAndCheckReset(attributesManager);
         }
@@ -30,7 +30,7 @@ const LaunchRequestHandler = {
 };
 
 async function LoadAndCheckReset(attributesManager) {
-    s3Attributes = await attributesManager.getPersistentAttributes() || { "beers": 0, "firstBeer": -1 };
+    s3Attributes = await attributesManager.getPersistentAttributes() || {"beers":0, "firstBeer": -1};
     dataLoaded = true;
     if (s3Attributes.hasOwnProperty("firstBeer")) {
         //reset Counter 24hours after the first Beer
@@ -41,8 +41,8 @@ async function LoadAndCheckReset(attributesManager) {
             attributesManager.setPersistentAttributes(s3Attributes);
             await attributesManager.savePersistentAttributes();
         }
-    } else {
-        s3Attributes = { "beers": 0, "firstBeer": -1 };
+    }else{
+        s3Attributes = {"beers":0, "firstBeer":-1};
     }
 }
 
@@ -110,10 +110,10 @@ const ResetBeersHandler = {
         return handlerInput.requestEnvelope.request.type === 'IntentRequest' &&
             handlerInput.requestEnvelope.request.intent.name === 'ResetBeersIntent';
     },
-    handle(handlerInput, error) {
+    async handle(handlerInput, error) {
         let speakOutput = "Dein BeerCounter wird zurückgesetzt";
+        const attributesManager = handlerInput.attributesManager;
         if (!dataLoaded) {
-            const attributesManager = handlerInput.attributesManager;
             await LoadAndCheckReset(attributesManager);
         }
         //Method to reset data?
@@ -125,7 +125,6 @@ const ResetBeersHandler = {
         return handlerInput.responseBuilder.speak(speakOutput).getResponse();
     }
 };
-
 
 const HelpIntentHandler = {
     canHandle(handlerInput) {
@@ -215,6 +214,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         LaunchRequestHandler,
         AddBeerHandler,
         GetBeerNumberHandler,
+        ResetBeersHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,
