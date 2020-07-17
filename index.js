@@ -17,9 +17,13 @@ const LaunchRequestHandler = {
         if (!dataLoaded) {
             await LoadAndCheckReset(attributesManager);
         }
-        if (s3Attributes.hasOwnProperty("beers") && s3Attributes.beers > 0) {
-            speakOutput += ` Ich habe bereits ${s3Attributes.beers} Bier für dich gezählt.`
-            repromptOutput += ` Ich habe bereits ${s3Attributes.beers} Bier für dich gezählt.`
+        if(s3Attributes.hasOwnProperty("groupMode") && s3Attributes.groupMode && s3Attributes.groupSize > 1){
+            speakOutput += ` Der Gruppenmodus ist aktiv. Ich habe bereits ${s3Attributes.beers} für die Gruppe gezählt. Jeder hat bereits ${s3Attributes.beers / s3Attributes.groupSize} Bier getrunken.`;
+        }else{
+            if (s3Attributes.hasOwnProperty("beers") && s3Attributes.beers > 0) {
+                speakOutput += ` Ich habe bereits ${s3Attributes.beers} Bier gezählt.`
+                repromptOutput += ` Ich habe bereits ${s3Attributes.beers} Bier gezählt.`
+            }
         }
 
         return handlerInput.responseBuilder
@@ -30,7 +34,7 @@ const LaunchRequestHandler = {
 };
 
 async function LoadAndCheckReset(attributesManager) {
-    s3Attributes = await attributesManager.getPersistentAttributes() || {"beers":0, "firstBeer": -1};
+    s3Attributes = await attributesManager.getPersistentAttributes() || {"beers":0, "firstBeer": -1, "groupMode": false, "groupSize": 0};
     dataLoaded = true;
     if (s3Attributes.hasOwnProperty("firstBeer")) {
         //reset Counter 24hours after the first Beer
@@ -55,20 +59,31 @@ const AddBeerHandler = {
     async handle(handlerInput, error) {
         let beers = handlerInput.requestEnvelope.request.intent.slots.Anzahl.value;
 
-        let output = `Ich zähle ${beers} Bier.`;
+        let output = `Ich zähle ${beers} Bier`;
 
         const attributesManager = handlerInput.attributesManager;
         if (!dataLoaded) {
             await LoadAndCheckReset(attributesManager);
         }
 
+        let group = s3Attributes.hasOwnProperty("groupMode") && s3Attributes.groupMode && s3Attributes.groupSize > 1;
+        if(group){
+              output += " für eure Gruppe.";
+              beers *= s3Attributes.groupSize;
+        }else{
+            output += "."
+        }
         if (s3Attributes.hasOwnProperty("beers")) {
             s3Attributes.beers = parseInt(s3Attributes.beers) + parseInt(beers);
             if (s3Attributes.hasOwnProperty("firstBeer") && (typeof(s3Attributes.firstBeer) === "undefined" || parseInt(s3Attributes.firstBeer) === -1)) {
                 s3Attributes.firstBeer = Date.now();
             }
             if (s3Attributes.beers > 1) {
-                output += ` Ich habe bereits ${s3Attributes.beers} Bier für dich gezählt`;
+                if(group){
+                    output += ` Ich habe bereits ${s3Attributes.beers} Bier für euch gezählt. Jeder hat ${s3Attributes.beers / s3Attributes.groupSize} Bier getrunken.`;
+                }else{
+                    output += ` Ich habe bereits ${s3Attributes.beers} Bier gezählt`;
+                }
             }
         }
 
@@ -94,9 +109,9 @@ const GetBeerNumberHandler = {
         }
         if (s3Attributes.hasOwnProperty("beers")) {
             if (s3Attributes.beers > 0) {
-                speakOutput = `Ich habe ${s3Attributes.beers} Bier für dich gezählt. `;
+                speakOutput = `Ich habe ${s3Attributes.beers} Bier gezählt. `;
             } else {
-                speakOutput = `Ich habe noch kein Bier für dich gezählt. Füge doch eins hinzu`;
+                speakOutput = `Ich habe noch kein Bier gezählt. Füge doch eins hinzu`;
             }
         } else {
             speakOutput = `Ich habe keine gespeicherten Daten gefunden`;
@@ -122,6 +137,69 @@ const ResetBeersHandler = {
             s3Attributes.firstBeer = -1;
         }
         await attributesManager.savePersistentAttributes(s3Attributes);
+        return handlerInput.responseBuilder.speak(speakOutput).getResponse();
+    }
+};
+
+const EnterGroupModeHandler = {
+    canHandle(handlerInput) {
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest' &&
+            handlerInput.requestEnvelope.request.intent.name === 'EnterGroupMode';
+    },
+    async handle(handlerInput, error) {
+        let groupSize = handlerInput.requestEnvelope.request.intent.slots.GroupSize.value;
+        let speakOutput = "Gruppenmodus bereits gestartet";
+        
+        const attributesManager = handlerInput.attributesManager;
+        if (!dataLoaded) {
+            await LoadAndCheckReset(attributesManager);
+        }
+        if (s3Attributes.hasOwnProperty("groupMode")) {
+            if(!s3Attributes.groupMode){
+                speakOutput = "Gruppenmodus mit " + groupSize + " Personen gestartet";
+                s3Attributes.beers = 0;
+                s3Attributes.firstBeer = -1;
+                s3Attributes.groupMode = true;
+                s3Attributes.groupSize = groupSize;
+            }
+        }else{
+            s3Attributes.groupMode = false;
+            s3Attributes.groupSize = 0;
+        }
+        attributesManager.setPersistentAttributes(s3Attributes);
+        await attributesManager.savePersistentAttributes();
+
+        return handlerInput.responseBuilder.speak(speakOutput).getResponse();
+    }
+};
+
+const ExitGroupModeHandler = {
+    canHandle(handlerInput) {
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest' &&
+            handlerInput.requestEnvelope.request.intent.name === 'ExitGroupMode';
+    },
+    async handle(handlerInput, error) {
+        let speakOutput = "Gruppenmodus ist nicht aktiv. ";
+        
+        const attributesManager = handlerInput.attributesManager;
+        if (!dataLoaded) {
+            await LoadAndCheckReset(attributesManager);
+        }
+        if (s3Attributes.hasOwnProperty("groupMode")) {
+            if(s3Attributes.groupMode){
+                speakOutput = "Gruppenmodus wird beendet.";
+                s3Attributes.beers = 0;
+                s3Attributes.firstBeer = -1;
+                s3Attributes.groupMode = false;
+                s3Attributes.groupSize = 0;
+            }
+        }else{
+            s3Attributes.groupMode = false;
+            s3Attributes.groupSize = 0;
+        }
+        attributesManager.setPersistentAttributes(s3Attributes);
+        await attributesManager.savePersistentAttributes();
+
         return handlerInput.responseBuilder.speak(speakOutput).getResponse();
     }
 };
@@ -215,6 +293,8 @@ exports.handler = Alexa.SkillBuilders.custom()
         AddBeerHandler,
         GetBeerNumberHandler,
         ResetBeersHandler,
+        EnterGroupModeHandler,
+        ExitGroupModeHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,
