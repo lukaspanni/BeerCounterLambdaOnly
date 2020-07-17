@@ -1,2 +1,1 @@
 ﻿# BeerCounterAlexaSkill
-BeerCounterJava->skill idea
